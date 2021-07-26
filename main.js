@@ -1,7 +1,7 @@
 /* cSpell:disable */
 import { JSDOM } from "jsdom";
 
-import { AuthKey } from "./config.js";
+import { AuthKey, minCampaignStars } from "./config.js";
 import { convertToSlug, httpGet, StarsSectionEnum, countStars } from "./utils.js";
 
 const fetch_owned_champions = async () => {
@@ -71,7 +71,7 @@ const rank_champions = async ({ ownedHeroes, minCampaignStars = 0 }) => {
 fetch_owned_champions()
   .then(e => JSON.parse(e)['heroTypes'])
   .then(heroes => heroes.map(hero => hero['name']['defaultValue']))
-  .then(e => rank_champions({ 'ownedHeroes': e, 'minCampaignStars': 4 }))
+  .then(e => rank_champions({ 'ownedHeroes': e, 'minCampaignStars': minCampaignStars }))
   .then(e => {
     for (const key in e) {
       if (e[key].length) {

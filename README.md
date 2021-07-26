@@ -1,6 +1,6 @@
 Rank your RAID: Shadow Legends champions by cross-matching the Hellhades's Raid Optimizer and the Ayumilove.net rank
 
-# Instalation
+# Installation
 
 1) Clone this repo to a local folder
 2) Link your account to Hellhades's Raid Optimizer
