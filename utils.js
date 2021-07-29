@@ -23,7 +23,7 @@ export const countStars = (text) => {
   return text.split('★').length - 1
 }
 
-export const StarsSectionEnum = Object.freeze({
+export const GameMode = Object.freeze({
   'Campaign': 1,
   'ArenaDefense': 2,
   'ArenaOffense': 3,

@@ -1,3 +1,5 @@
 export const AuthKey = ""
 
-export const minCampaignStars = 4
+export const minStars = 4
+
+export const filterBy = "arena_offense_stars"

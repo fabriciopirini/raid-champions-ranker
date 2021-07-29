@@ -1,8 +1,8 @@
 /* cSpell:disable */
 import { JSDOM } from "jsdom";
 
-import { AuthKey, minCampaignStars } from "./config.js";
-import { convertToSlug, httpGet, StarsSectionEnum, countStars } from "./utils.js";
+import { AuthKey, minStars, filterBy } from "./config.js";
+import { convertToSlug, httpGet, GameMode, countStars } from "./utils.js";
 
 const fetch_owned_champions = async () => {
   return await httpGet({
@@ -28,18 +28,20 @@ const get_champion_stars = async ({ heroName }) => {
 
   const starsSectionText = document.querySelector('.entry-content > table:nth-child(2) > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(3)').textContent
   // console.log(starsSectionText.match(regexp));
-  const grindingStars = countStars(starsSectionText.match(regexp)[StarsSectionEnum.Campaign - 1])
-  const dungeonStars = countStars(starsSectionText.match(regexp)[StarsSectionEnum.MinotaursLabyrinth - 1])
-  const arenaStars = countStars(starsSectionText.match(regexp)[StarsSectionEnum.ArenaOffense - 1])
+  const grindingStars = countStars(starsSectionText.match(regexp)[GameMode.Campaign - 1])
+  const dungeonStars = countStars(starsSectionText.match(regexp)[GameMode.MinotaursLabyrinth - 1])
+  const arenaOffenseStars = countStars(starsSectionText.match(regexp)[GameMode.ArenaOffense - 1])
+  const clanBossStars = countStars(starsSectionText.match(regexp)[GameMode.ClanBoss - 1])
 
   return {
     'campaign_stars': grindingStars,
     'dungeon_stars': dungeonStars,
-    'arena_stars': arenaStars,
+    'arena_offense_stars': arenaOffenseStars,
+    'clan_boss_stars': clanBossStars,
   }
 }
 
-const rank_champions = async ({ ownedHeroes, minCampaignStars = 0 }) => {
+const rank_champions = async ({ ownedHeroes, minStars = 0, filterBy = 'campaign_stars' }) => {
   const grade = { 'S': [], 'A': [], 'B': [], 'C': [], 'F': [] }
 
   const req = await httpGet({
@@ -58,7 +60,7 @@ const rank_champions = async ({ ownedHeroes, minCampaignStars = 0 }) => {
       const rank = elem.parentNode.parentNode.previousSibling.textContent[0]
       const champion_stars = await get_champion_stars({ 'heroName': heroName })
 
-      if (champion_stars.campaign_stars >= minCampaignStars) {
+      if (champion_stars[filterBy] >= minStars) {
         grade[rank].push({ 'champion': heroName, ...champion_stars })
       }
 
@@ -69,58 +71,15 @@ const rank_champions = async ({ ownedHeroes, minCampaignStars = 0 }) => {
 }
 
 fetch_owned_champions()
-  .then(e => JSON.parse(e)['heroTypes'])
+  .then(resp => JSON.parse(resp)['heroTypes'])
   .then(heroes => heroes.map(hero => hero['name']['defaultValue']))
-  .then(e => rank_champions({ 'ownedHeroes': e, 'minCampaignStars': minCampaignStars }))
-  .then(e => {
-    for (const key in e) {
-      if (e[key].length) {
+  .then(heroNames => rank_champions({ 'ownedHeroes': heroNames, 'minStars': minStars, 'filterBy': filterBy }))
+  .then(rankedHeroes => {
+    for (const key in rankedHeroes) {
+      if (rankedHeroes[key].length) {
         console.log(`Rank ${key}`)
-        console.table(e[key])
+        console.table(rankedHeroes[key])
       }
     }
   })
   .catch(console.error)
-
-
-/*
-
-Old implementation, browser dependent:
-
-In browser:
-
-https://ayumilove.net/raid-shadow-legends-list-of-champions-by-ranking/
-
-heroes = $$('div.entry-content > ul > li > a[href]')
-heroesNames = heroes.map(hero => hero.textContent.split(' |')[0])
-grade = {'S': [], 'A': [], 'B': [], 'C': [], 'F': []}
-ownedHeroes = [
-  'Kael',           'Satyr',          'Jotun',           'Jarang',
-  'Warpriest',      'Graybeard',      'Rocktooth',       'Brute',
-  'Spirithost',     'Militia',        'Jaeger',          'Hardscale',
-  'Dhampir',        'Intercessor',    'Warboy',          'Cultist',
-  'Redeemer',       'Ultimate Galek', 'Sister Militant', 'Heiress',
-  'Commander',      'Oldbeard',       'Sergeant',        'Novitiate',
-  'Pilgrim',        'Troglodyte',     'Archer',          'Sniper',
-  'Knecht',         'Warmaiden',      'Incubus',         'Elfguard',
-  'Heartpiercer',   'Outlaw Monk',    'Sorceress',       'Death Hound',
-  'Saurus',         'Axeman',         'Skellag',         'Preacher',
-  'Skinner',        'Judge',          'Ranger',          'Yeoman',
-  'Kael',           'Satyr',          'Jotun',           'Jarang',
-  'Warpriest',      'Graybeard',      'Rocktooth',       'Brute',
-  'Spirithost',     'Militia',        'Jaeger',          'Hardscale',
-  'Dhampir',        'Intercessor',    'Cultist',         'Redeemer',
-  'Ultimate Galek', 'Heiress',        'Commander',       'Oldbeard',
-  'Sergeant',       'Pilgrim',        'Archer',          'Sniper',
-  'Warmaiden',      'Incubus',        'Elfguard',        'Heartpiercer',
-  'Outlaw Monk',    'Sorceress',      'Saurus',          'Skellag',
-  'Skinner',        'Judge'
-]
-heroes.forEach(hero => {
-    heroName = hero.textContent.split(' |')[0]
-  if (ownedHeroes.includes(heroName)) {
-    grade[hero.parentNode.parentNode.previousSibling.textContent[0]].push(heroName)
-  }
-})
-console.log(grade)
-*/
